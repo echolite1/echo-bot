@@ -16,4 +16,5 @@ class CustomContext extends Telegraf.Context {
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 bot.start((ctx) => ctx.reply('Hello'))
 bot.help((ctx) => ctx.reply('Help message'))
+bot.monkey((ctx) => ctx.reply(' '))
 bot.launch()
