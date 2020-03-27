@@ -1,0 +1,27 @@
+{
+  "name": "echo-bot",
+  "version": "1.0.0",
+  "description": "test nodejs",
+  "main": "test.js",
+  "dependencies": {
+    "telegraf": "^3.36.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echolite1/echo-bot.git"
+  },
+  "keywords": [
+    "telegram",
+    "bot"
+  ],
+  "author": "Aleksandr Ukhatov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/echolite1/echo-bot/issues"
+  },
+  "homepage": "https://github.com/echolite1/echo-bot#readme"
+}
