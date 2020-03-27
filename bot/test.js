@@ -1,5 +1,6 @@
 const Telegraf = require('telegraf')
 const data = require('./data')
+const TelegrafInlineMenu = require('telegraf-inline-menu')
 
 class CustomContext extends Telegraf.Context {
   constructor (update, telegram, options) {
@@ -16,5 +17,19 @@ class CustomContext extends Telegraf.Context {
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 bot.start((ctx) => ctx.reply('Hello'))
 bot.help((ctx) => ctx.reply('Help message'))
-bot.monkey((ctx) => ctx.reply(' '))
+
+
+const menu = new TelegrafInlineMenu(ctx => `Hey ${ctx.from.first_name}!`)
+menu.setCommand('play')
+menu.simpleButton('I am excited!', 'a', {
+  doFunc: ctx => ctx.reply('As am I!')
+})
+menu.simpleButton('I am not excited!', 'b', {
+  doFunc: ctx => ctx.reply('Coronatime!')
+})
+
+bot.use(menu.init())
+ 
+bot.startPolling()
+// bot.monkey((ctx) => ctx.reply('HAHA'))
 bot.launch()
