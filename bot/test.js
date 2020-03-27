@@ -25,11 +25,12 @@ menu.simpleButton('I am excited!', 'a', {
   doFunc: ctx => ctx.reply('As am I!')
 })
 menu.simpleButton('I am not excited!', 'b', {
-  doFunc: ctx => ctx.reply('Coronatime!')
+  doFunc: ctx => ctx.reply(menu.simpleButton('I am not excited!', 'b', {
+    doFunc: ctx => ctx.reply('Coronatime!')
+  }))
 })
 
 bot.use(menu.init())
  
 bot.startPolling()
-// bot.monkey((ctx) => ctx.reply('HAHA'))
 bot.launch()
