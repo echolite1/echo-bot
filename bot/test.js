@@ -95,10 +95,12 @@ menu.simpleButton('Логин', '1', {
 menu.simpleButton('Пароль', '2', {
   doFunc: ctx => ctx.reply('Вводи:')
 })
-//==================
 
 bot.use(menu.init())
+//==================
+
+
 bot.startPolling()
-bot.launch() // можно удалить
+//bot.launch() // можно удалить
 
 //   market://details?id=com.google.android.apps.maps
