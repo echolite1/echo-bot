@@ -22,19 +22,39 @@ class CustomContext extends Telegraf.Context {
 
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 
-const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)
-
 msg_id = 322
+
+//===============
+const Extra = require('telegraf/extra')
+const Markup = require('telegraf/markup')
+
+const keysLink = Markup.inlineKeyboard([              //шаблон кнопок
+  Markup.urlButton('💎', 'https://play.google.com/'),
+  Markup.callbackButton('btn1', '-'),
+  Markup.callbackButton('btn2', '-')
+])
+//===============
+
+bot.on('photo', (ctx) => ctx.telegram.sendMessage(
+  ctx.chat.id, 
+  "text response on photo with keysLink", 
+  Extra.markup(keysLink)
+)) // перебивает всё, но реагирует только на фото
 
 bot.start((ctx) => {
 	ctx.reply(`Привет ${ctx.chat.first_name}`)
-  //telegram.sendMessage(163700134, ctx.chat)// + msgInfo.message_id)
-  telegram.sendMessage(163700134, `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}`)// + msgInfo.message_id)
+  //telegram.sendMessage(163700134, ctx.chat)
+  telegram.sendMessage(163700134, `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}`)
 })
 
-//bot.on('message', (ctx) => ctx.reply('???????')) // перебивает команды
+//bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
+//       message = любое сообщение юзера
 
-bot.help((ctx) => ctx.reply('Ответ на команду хелп'))
+bot.help((ctx) => ctx.telegram.sendMessage(
+  ctx.chat.id, 
+  "text response with keysLink", 
+  Extra.markup(keysLink)
+))
 
 bot.command('a', (ctx) => ctx.reply('Command a'))
 
@@ -45,7 +65,7 @@ bot.command('c', Telegraf.reply('Command c'))
 bot.command('hide', (ctx) => {
   //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
   telegram.forwardMessage(554729289, 163700134, msg_id) //(to, from, msg_id)
-  console.log('fwd')
+  console.log('fwd') //if сообщ переслалось == true подождать и только потом delete
   
   ctx.reply('Сообщение было спрятано')
   console.log('text')
@@ -60,9 +80,12 @@ bot.command('hide', (ctx) => {
   }
   sleep(5000)
   
-  telegram.deleteMessage(163700134, msg_id) //(where, msg_id)
+  telegram.deleteMessage(163700134, msg_id) //(where to send, msg_id)
   console.log('del')
 })
+
+//==================
+const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
 
 menu.setCommand('play')
 
@@ -72,7 +95,10 @@ menu.simpleButton('Логин', '1', {
 menu.simpleButton('Пароль', '2', {
   doFunc: ctx => ctx.reply('Вводи:')
 })
+//==================
 
 bot.use(menu.init())
 bot.startPolling()
 bot.launch() // можно удалить
+
+//   market://details?id=com.google.android.apps.maps
