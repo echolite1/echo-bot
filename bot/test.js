@@ -22,7 +22,10 @@ class CustomContext extends Telegraf.Context {
 
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 
+const msg = 'On+my+way'
+const startLink = 'https://api.telegram.org/bot1139923661:AAGmTpqUt2xlQ795PTadSHN3rF-fthggocQ/sendMessage?chat_id='
 msg_id = 322
+
 
 //===============
 const Extra = require('telegraf/extra')
@@ -44,7 +47,8 @@ bot.on('photo', (ctx) => ctx.telegram.sendMessage(
 bot.start((ctx) => {
 	ctx.reply(`Привет ${ctx.chat.first_name}`)
   //telegram.sendMessage(163700134, ctx.chat)
-  telegram.sendMessage(163700134, `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}`)
+  telegram.sendMessage(163700134,
+     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${msg}`)
 })
 
 //bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
@@ -98,7 +102,6 @@ menu.simpleButton('Пароль', '2', {
 
 bot.use(menu.init())
 //==================
-
 
 bot.startPolling()
 //bot.launch() // можно удалить
