@@ -19,20 +19,11 @@ class CustomContext extends Telegraf.Context {
     return super.reply(...args)
   }
 }
-//===============
-
-// const commandArgsMiddleware = require('./commandArgs')
-
-//===============
-
 
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 
-
 //===============
-// fpr args parsing
-const commandParts = require('./telegrafCommandParts');
-
+const commandParts = require('./telegrafCommandParts'); // fpr args parsing
 bot.use(commandParts());
 //===============
 
@@ -40,15 +31,13 @@ const msg = 'On+my+way'
 const startLink = 'https://api.telegram.org/bot' + data.token + '/sendMessage?chat_id='
 msg_id = 322
 
-
 //===============
 const Extra = require('telegraf/extra')
-const Markup = require('telegraf/markup')
+const Markup = require('telegraf/markup')       //шаблон кнопок
 
-const keysLink = Markup.inlineKeyboard([              //шаблон кнопок
-  Markup.urlButton('💎', 'https://play.google.com/', true),
-  Markup.callbackButton('btn1', '-'),
-  Markup.callbackButton('btn2', '-')
+const keysLink = Markup.inlineKeyboard([
+  [Markup.urlButton('💎', 'https://play.google.com/')],
+  [Markup.callbackButton('Хорошо', '-'), Markup.callbackButton('Отлично', '-')]
 ])
 //===============
 
@@ -62,16 +51,16 @@ bot.start((ctx) => {
 	ctx.reply(`Привет ${ctx.chat.first_name}`)
   //telegram.sendMessage(163700134, ctx.chat)
   console.log(ctx.state.command)
-  telegram.sendMessage(438473347,
-     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${ctx.state.command.args.split(" ")[1]}`)
+  telegram.sendMessage(data.admins[0],
+     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${ctx.state.command.args}`)
 })
 
 //bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
 //       message = любое сообщение юзера
 
 bot.help((ctx) => ctx.telegram.sendMessage(
-  ctx.chat.id, 
-  "text response with keysLink", 
+  ctx.state.command.args.split(' ')[0], 
+  ctx.state.command.args.split(' ')[1], 
   Extra.markup(keysLink)
 ))
 
@@ -80,8 +69,6 @@ bot.command('a', (ctx) => ctx.reply('Command a'))
 bot.command('b', ({ reply }) => reply('Command b'))
 
 bot.command('c', Telegraf.reply('Command c'))
-
-// bot.command('send', (ctx))
 
 bot.command('hide', (ctx) => {
   //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
