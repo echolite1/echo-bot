@@ -19,11 +19,25 @@ class CustomContext extends Telegraf.Context {
     return super.reply(...args)
   }
 }
+//===============
+
+// const commandArgsMiddleware = require('./commandArgs')
+
+//===============
+
 
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 
+
+//===============
+// fpr args parsing
+const commandParts = require('./telegrafCommandParts');
+
+bot.use(commandParts());
+//===============
+
 const msg = 'On+my+way'
-const startLink = 'https://api.telegram.org/bot1139923661:AAGmTpqUt2xlQ795PTadSHN3rF-fthggocQ/sendMessage?chat_id='
+const startLink = 'https://api.telegram.org/bot' + data.token + '/sendMessage?chat_id='
 msg_id = 322
 
 
@@ -47,8 +61,9 @@ bot.on('photo', (ctx) => ctx.telegram.sendMessage(
 bot.start((ctx) => {
 	ctx.reply(`Привет ${ctx.chat.first_name}`)
   //telegram.sendMessage(163700134, ctx.chat)
-  telegram.sendMessage(163700134,
-     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${msg}`)
+  console.log(ctx.state.command)
+  telegram.sendMessage(438473347,
+     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${ctx.state.command.args.split(" ")[1]}`)
 })
 
 //bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
@@ -66,9 +81,11 @@ bot.command('b', ({ reply }) => reply('Command b'))
 
 bot.command('c', Telegraf.reply('Command c'))
 
+// bot.command('send', (ctx))
+
 bot.command('hide', (ctx) => {
   //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
-  telegram.forwardMessage(554729289, 163700134, msg_id) //(to, from, msg_id)
+  telegram.forwardMessage(438473347, 163700134, msg_id) //(to, from, msg_id)
   console.log('fwd') //if сообщ переслалось == true подождать и только потом delete
   
   ctx.reply('Сообщение было спрятано')
