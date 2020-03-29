@@ -24,7 +24,7 @@ class CustomContext extends Telegraf.Context {
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 bot.start((ctx) => {
 	ctx.reply('Hello')
-	telegram.sendMessage(163700134, ctx.chat)// + msgInfo.message_id)
+	telegram.sendMessage(163700134, ctx.message)// + msgInfo.message_id)
 })
 bot.help((ctx) => ctx.reply('Help message'))
 
