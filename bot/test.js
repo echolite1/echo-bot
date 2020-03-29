@@ -39,7 +39,7 @@ const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 
 const keysLink = Markup.inlineKeyboard([              //шаблон кнопок
-  Markup.urlButton('💎', 'https://play.google.com/'),
+  Markup.urlButton('💎', 'https://play.google.com/', true),
   Markup.callbackButton('btn1', '-'),
   Markup.callbackButton('btn2', '-')
 ])
