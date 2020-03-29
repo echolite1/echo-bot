@@ -45,7 +45,10 @@ bot.on('photo', (ctx) => ctx.telegram.sendMessage(
 )) // перебивает всё, но реагирует только на фото
 
 bot.start((ctx) => {
-
+	ctx.reply(`Привет ${ctx.chat.first_name}`)
+  //telegram.sendMessage(163700134, ctx.chat)
+  telegram.sendMessage(163700134,
+     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${msg}`)
 })
 
 //bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
