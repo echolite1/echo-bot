@@ -23,13 +23,15 @@ class CustomContext extends Telegraf.Context {
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 
 //===============
-const commandParts = require('./telegrafCommandParts'); // fpr args parsing
+
+const commandParts = require('./telegrafCommandParts'); // for args parsing
+
 bot.use(commandParts());
 //===============
 
 const msg = 'On+my+way'
 const startLink = 'https://api.telegram.org/bot' + data.token + '/sendMessage?chat_id='
-msg_id = 322
+msg_id = 202
 
 //===============
 const Extra = require('telegraf/extra')
@@ -71,25 +73,33 @@ bot.command('b', ({ reply }) => reply('Command b'))
 bot.command('c', Telegraf.reply('Command c'))
 
 bot.command('hide', (ctx) => {
-  //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
-  telegram.forwardMessage(438473347, 163700134, msg_id) //(to, from, msg_id)
-  console.log('fwd') //if сообщ переслалось == true подождать и только потом delete
-  
-  ctx.reply('Сообщение было спрятано')
-  console.log('text')
 
-  console.log('start sleeping')
-  function sleep(milliseconds) {
-    const date = Date.now()
-    let currentDate = null
-    do {
-      currentDate = Date.now()
-    } while (currentDate - date < milliseconds)
-  }
-  sleep(5000)
-  
-  telegram.deleteMessage(163700134, msg_id) //(where to send, msg_id)
-  console.log('del')
+
+  //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
+  telegram.forwardMessage(438473347, 163700134, ctx.state.command.args) //(to, from, msg_id)
+  console.log('fwd') //if сообщ переслалось == true подождать и только потом delete
+
+
+ //  console.log('start sleeping')
+ //  function sleep(milliseconds) {
+ //    const date = Date.now()
+ //    let currentDate = null
+ //    do {
+ //      currentDate = Date.now()
+ //    } while (currentDate - date < milliseconds)
+ //  }
+ //  sleep(10000)
+ //  console.log('stop sleeping')
+ //  function flush() {
+ //    process.stdout.clearLine();
+ //    process.stdout.cursorTo(0);
+ //  }
+	// flush();
+
+  telegram.deleteMessage(163700134, ctx.state.command.args) //(from which chat to delete, msg_id)
+  console.log(ctx.state.command.args)
+  ctx.reply('Сообщение ' + ctx.state.command.args + ' было спрятано')
+  console.log('text')
 })
 
 //==================
