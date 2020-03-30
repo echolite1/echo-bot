@@ -8,6 +8,8 @@ const telegram = new Telegram(data.token, {
   agent: null,        // https.Agent instance, allows custom proxy, certificate, keep alive, etc.
   webhookReply: true  // Reply via webhook
 })
+const fetch = require("node-fetch");
+// 674-683
 class CustomContext extends Telegraf.Context {
   constructor (update, telegram, options) {
     console.log('Creating contexy for %j', update)
@@ -32,7 +34,7 @@ msg_id = 202
 //===============
 keysLink = Markup.inlineKeyboard([
   [Markup.urlButton('💎', 'https://play.google.com/')],
-  [Markup.callbackButton('Хорошо', '-'), Markup.callbackButton('Отлично', '-')]
+  [Markup.callbackButton('Хорошо', 'A'), Markup.callbackButton('Отлично', 'B')]
 ])                                                                                 //шаблон кнопок
 //===============
 
@@ -74,6 +76,27 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
 bot.command('a', (ctx) => ctx.reply('Command a'))
 bot.command('b', ({ reply }) => reply('Command b'))
 bot.command('c', Telegraf.reply('Command c'))
+
+bot.command('curl', (ctx) => {
+  const userAction = async () => {
+    const response = await fetch('https://api.telegram.org/bot1082570111:AAGEyxYplYm6E4QjScK8IMgcRx01hiLvSDw/forwardMessage?chat_id=438473347&from_chat_id=163700134&message_id='+ctx.state.command.args);
+    const myJson = await response.json(); //extract JSON from the http response
+    console.log(myJson)
+
+    var jsonData = JSON.stringify(myJson);
+    var fs = require('fs');
+    fs.writeFile("test.txt", jsonData, function(err) {
+      if (err) {
+          console.log(err);
+      }
+    });
+
+    telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
+  }
+  userAction()
+})
+
+
 
 bot.command('hide', (ctx) => {
   //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')

@@ -4,6 +4,7 @@
   "description": "test nodejs",
   "main": "test.js",
   "dependencies": {
+    "node-fetch": "^2.6.0",
     "telegraf": "^3.36.0",
     "telegraf-inline-menu": "^4.0.0"
   },
