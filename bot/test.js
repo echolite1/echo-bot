@@ -34,8 +34,11 @@ msg_id = 202
 //===============
 keysLink = Markup.inlineKeyboard([
   [Markup.urlButton('💎', 'https://play.google.com/')],
-  [Markup.callbackButton('Хорошо', 'A'), Markup.callbackButton('Отлично', 'B')]
-])                                                                                 //шаблон кнопок
+  [Markup.callbackButton('Отлично', 'A'), Markup.callbackButton('Хорошо', 'B')]
+])
+
+bot.action('A', ctx => ctx.reply('5'))
+bot.action('B', ctx => ctx.reply('4'))
 //===============
 
 bot.on('photo', (ctx) => ctx.telegram.sendMessage(
