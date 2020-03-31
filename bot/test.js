@@ -1,4 +1,5 @@
 const Telegraf = require('telegraf')
+const fetch = require("node-fetch") //for fwd-del
 const data = require('./data') // admins, token
 const Extra = require('telegraf/extra') //for buttons
 const Markup = require('telegraf/markup') //for buttons
@@ -8,8 +9,6 @@ const telegram = new Telegram(data.token, {
   agent: null,        // https.Agent instance, allows custom proxy, certificate, keep alive, etc.
   webhookReply: true  // Reply via webhook
 })
-const fetch = require("node-fetch");
-// 674-683
 class CustomContext extends Telegraf.Context {
   constructor (update, telegram, options) {
     console.log('Creating contexy for %j', update)
@@ -25,50 +24,37 @@ const bot = new Telegraf(data.token, { contextType: CustomContext })
 const commandParts = require('./telegrafCommandParts'); // for args parsing
 bot.use(commandParts()) // for args parsing
 
-// available commands:      a, b, c, start(text), help, play, hide, send(id,text), (onPhoto)
+// available commands:      start, hide, send(id,text)
 
-const msg = 'On+my+way'
-const startLink = 'https://api.telegram.org/bot' + data.token + '/sendMessage?chat_id='
-msg_id = 202
+const msg = 'filler'
+const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
-//===============
+keysMain = Markup.inlineKeyboard(
+  [Markup.callbackButton('⚠️', 'B')]
+)
+
 keysLink = Markup.inlineKeyboard([
-  [Markup.urlButton('💎', 'https://play.google.com/')],
-  [Markup.callbackButton('Отлично', 'A'), Markup.callbackButton('Хорошо', 'B')]
+  [Markup.urlButton('➕', 'https://play.google.com/')],
+  [Markup.callbackButton('🅰️', 'A'), Markup.callbackButton('🅱️', 'B')]
 ])
 
-bot.action('A', ctx => ctx.reply('5'))
-bot.action('B', ctx => ctx.reply('4'))
-//===============
-
-bot.on('photo', (ctx) => ctx.telegram.sendMessage(
-  ctx.chat.id, 
-  "text response on photo with keysLink", 
-  Extra.markup(keysLink)
-)) // перебивает всё, но реагирует только на фото
-
-bot.start((ctx) => {
-
-  ctx.reply(
-    `Привет ${ctx.chat.first_name}`,
-    Extra.markup(keysLink)
-  )
-
-  console.log(ctx.state.command) // отображение аргументов
-
-  telegram.sendMessage(
-    data.admins[0],
-    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n${startLink}${ctx.chat.id}&text=${ctx.state.command.args}`
-    //Extra.markup(keysLink) //как вариант - админские кнопки(забанить, удалить)
-  )//убрать аргумент
-  
+bot.action('A', ctx => ctx.reply('Напишите что-то'))
+bot.action('B', ctx => {
+  ctx.reply('Недоступно'), 
+  telegram.sendMessage(data.admins[0], 'usr clicked b')
 })
 
-//telegram.sendMessage(163700134, ctx.chat)
-//bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
-//       message = любое сообщение юзера
-
-bot.help(Telegraf.reply('Komy nuzhen help?'))
+bot.start((ctx) => {
+  ctx.reply(
+    `Привет ${ctx.chat.first_name}, это главное меню`,
+    Extra.markup(keysLink)
+  )
+  telegram.sendMessage(
+    data.admins[0],
+    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} filler`   //${tokenLink}sendMessage?chat_id=${ctx.chat.id}&text=${msg}`
+    //Extra.markup(keysLink) //как вариант - админские кнопки(забанить, удалить)
+  )
+})
 
 bot.command('send', (ctx) => ctx.telegram.sendMessage(
     ctx.state.command.args.split(' ')[0], 
@@ -76,71 +62,58 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
     Extra.markup(keysLink)
 )) // (id_to, text_tolko_tak, extra)
 
-bot.command('a', (ctx) => ctx.reply('Command a'))
-bot.command('b', ({ reply }) => reply('Command b'))
-bot.command('c', Telegraf.reply('Command c'))
-
-bot.command('curl', (ctx) => {
+bot.command('hide', (ctx) => {
   const userAction = async () => {
-    const response = await fetch('https://api.telegram.org/bot1082570111:AAGEyxYplYm6E4QjScK8IMgcRx01hiLvSDw/forwardMessage?chat_id=438473347&from_chat_id=163700134&message_id='+ctx.state.command.args);
+    const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=375492451&message_id=`+ctx.state.command.args);
     const myJson = await response.json(); //extract JSON from the http response
     console.log(myJson)
-
     var jsonData = JSON.stringify(myJson);
-    var fs = require('fs');
+    var fs = require('fs')
     fs.writeFile("test.txt", jsonData, function(err) {
-      if (err) {
-          console.log(err);
-      }
-    });
-
-    telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
+      if (err) {console.log(err)}
+    })
+    telegram.deleteMessage(375492451, ctx.state.command.args) //(delete from which chat, msg_id)
+    telegram.sendMessage(375492451, 'Отправленное вами сообщение было скрыто')
   }
   userAction()
 })
 
-
-
-bot.command('hide', (ctx) => {
-  //telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
-  telegram.forwardMessage(438473347, 163700134, ctx.state.command.args) //(to, from, msg_id)
-
-  //  console.log('start sleeping')
-  //  function sleep(milliseconds) {
-  //    const date = Date.now()
-  //    let currentDate = null
-  //    do {
-  //      currentDate = Date.now()
-  //    } while (currentDate - date < milliseconds)
-  //  }
-  //  sleep(10000)
-  //  console.log('stop sleeping')
-  //  function flush() {
-  //    process.stdout.clearLine();
-  //    process.stdout.cursorTo(0);
-  //  }
-  //  flush();
-
-  telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
-  console.log(ctx.state.command.args)
-  ctx.reply('Сообщение ' + ctx.state.command.args + ' было спрятано')
-})   //if сообщ переслалось == true подождать и только потом delete
-
-//==================
-const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
-
-menu.setCommand('play')
-
-menu.simpleButton('Логин', '1', {
-  doFunc: ctx => ctx.reply('Вводи:') // hide(msg_id + 1)
-})
-menu.simpleButton('Пароль', '2', {
-  doFunc: ctx => ctx.reply('Вводи:')
-})
-
-bot.use(menu.init())
-//==================
-
 bot.startPolling()
 
-//   market://details?id=com.google.android.apps.maps
+
+
+
+
+//      === МУСОРКА ===
+
+// bot.command('a', (ctx) => ctx.reply('Command a'))
+// bot.command('b', ({ reply }) => reply('Command b'))
+// bot.command('c', Telegraf.reply('Command c'))
+
+// telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
+// telegram.forwardMessage(438473347, 163700134, ctx.state.command.args) //(to, from, msg_id)
+// telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
+// ctx.reply('Сообщение ' + ctx.state.command.args + ' было спрятано')
+// telegram.sendMessage(163700134, ctx.chat)
+// bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
+//         message = любое сообщение юзера
+
+// bot.on('photo', (ctx) => ctx.telegram.sendMessage(
+//   ctx.chat.id, 
+//   "text response on photo with keysLink", 
+//   Extra.markup(keysLink)
+// )) // перебивает всё, но реагирует только на фото
+
+//==================
+// const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
+// menu.setCommand('play')
+// menu.simpleButton('Логин', '1', {
+//   doFunc: ctx => ctx.reply('Вводи:') // hide(msg_id + 1)
+// })
+// menu.simpleButton('Пароль', '2', {
+//   doFunc: ctx => ctx.reply('Вводи:')
+// })
+// bot.use(menu.init())
+//==================
+
+// market://details?id=com.google.android.apps.maps
