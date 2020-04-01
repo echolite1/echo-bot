@@ -11,7 +11,7 @@ const telegram = new Telegram(data.token, {
 })
 class CustomContext extends Telegraf.Context {
   constructor (update, telegram, options) {
-    console.log('Creating contexy for %j', update)
+    console.log('contexy %j', update)
     super(update, telegram, options)
   }
 
@@ -26,17 +26,24 @@ bot.use(commandParts()) // for args parsing
 
 // available commands:      start, hide, send(id,text)
 
+const id = 163700134
 const msg = 'filler'
 const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
-keysMain = Markup.inlineKeyboard(
-  [Markup.callbackButton('⚠️', 'B')]
-)
+
+//            === КЛАВИАТУРЫ ===
+keysAdmin = Markup.inlineKeyboard([
+  Markup.callbackButton('Бан', 'ban'),
+  Markup.callbackButton('Удалить историю', 'del')
+])
 
 keysLink = Markup.inlineKeyboard([
-  [Markup.urlButton('➕', 'https://play.google.com/')],
-  [Markup.callbackButton('🅰️', 'A'), Markup.callbackButton('🅱️', 'B')]
+  [Markup.urlButton('★', 'https://play.google.com/')],
+  [Markup.callbackButton('🅰', 'A'), Markup.callbackButton('🅱', 'B')]
 ])
+//       =============================
+
+
 
 bot.action('A', ctx => ctx.reply('Напишите что-то'))
 bot.action('B', ctx => {
@@ -44,6 +51,9 @@ bot.action('B', ctx => {
   telegram.sendMessage(data.admins[0], 'usr clicked b')
 })
 
+
+
+//          === COMMANDS ===
 bot.start((ctx) => {
   ctx.reply(
     `Привет ${ctx.chat.first_name}, это главное меню`,
@@ -51,8 +61,8 @@ bot.start((ctx) => {
   )
   telegram.sendMessage(
     data.admins[0],
-    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} filler`   //${tokenLink}sendMessage?chat_id=${ctx.chat.id}&text=${msg}`
-    //Extra.markup(keysLink) //как вариант - админские кнопки(забанить, удалить)
+    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} filler`,
+    Extra.markup(keysAdmin)
   )
 })
 
@@ -62,9 +72,9 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
     Extra.markup(keysLink)
 )) // (id_to, text_tolko_tak, extra)
 
-bot.command('hide', (ctx) => {
+bot.command('hide', (ctx) => {                // переделать в реакцию
   const userAction = async () => {
-    const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=375492451&message_id=`+ctx.state.command.args);
+    const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=${id}&message_id=`+ctx.state.command.args);
     const myJson = await response.json(); //extract JSON from the http response
     console.log(myJson)
     var jsonData = JSON.stringify(myJson);
@@ -72,11 +82,12 @@ bot.command('hide', (ctx) => {
     fs.writeFile("test.txt", jsonData, function(err) {
       if (err) {console.log(err)}
     })
-    telegram.deleteMessage(375492451, ctx.state.command.args) //(delete from which chat, msg_id)
-    telegram.sendMessage(375492451, 'Отправленное вами сообщение было скрыто')
+    telegram.deleteMessage(id, ctx.state.command.args) //(delete from which chat, msg_id)
+    telegram.sendMessage(id, 'Отправленное вами сообщение было скрыто')
   }
   userAction()
 })
+//    ==========================
 
 bot.startPolling()
 
@@ -103,6 +114,7 @@ bot.startPolling()
 //   "text response on photo with keysLink", 
 //   Extra.markup(keysLink)
 // )) // перебивает всё, но реагирует только на фото
+//bot.on(['forward', 'sticker'], (ctx) => console.log('YYY', ctx.fetch.id)) // a OR b
 
 //==================
 // const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
