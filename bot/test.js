@@ -89,8 +89,7 @@ bot.command('hide', (ctx) => {                // переделать в реа�
 })
 //    ==========================
 
-var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017/";
+
 
 // const replies = {
 //   // text
@@ -104,13 +103,39 @@ var url = "mongodb://localhost:27017/";
 // }
 
 
-bot.on('text', ctx => {
-  let cmd = ctx.message.text.toLowerCase()
-  // ЛОГИКА ЛОГИКА ЛОГИКА
-  const answer = cmd+cmd
-  ctx.reply(answer)
-})
 
+var MongoClient = require('mongodb').MongoClient;
+var url = "mongodb://localhost:27017";
+
+bot.command("ban", (ctx) => {
+  const user_id = ctx.state.command.args
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+    // // var collection = db.collection('user_ids');
+    dbo.createCollection("user_ids", function(err, res) {
+      if (err) throw err
+      console.log("Collection user_ids created!")
+      ctx.reply("Collection user_ids created!")
+    })
+
+    var myobj = { name: "Alex", id: user_id };
+
+    dbo.collection("user_ids").insertOne(myobj, function(err, res) {
+      if (err) throw err;
+      console.log(user_id + " inserted");
+      ctx.reply(user_id + " inserted");
+    });
+    // ctx.reply(dbo.getCollection("user_ids"))
+    dbo.collection('user_ids').count(function(err, count) {
+      // assert.equal(null, err);
+      // assert.equal(4, count);
+      console.logcount
+      ctx.reply(count)
+    })
+    
+  })
+})
 
 bot.command("connect", (ctx) =>{
   MongoClient.connect(url, function(err, db) {
@@ -126,6 +151,14 @@ bot.command("connect", (ctx) =>{
   });
 })
 
+
+
+bot.on('text', ctx => {
+  let cmd = ctx.message.text.toLowerCase()
+  // ЛОГИКА ЛОГИКА ЛОГИКА
+  const answer = cmd+cmd
+  ctx.reply(answer)
+})
 
 bot.startPolling()
 
