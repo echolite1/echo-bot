@@ -1,3 +1,4 @@
 node_modules
 .DS_Store
 bot/data.js
+test.txt
