@@ -92,6 +92,24 @@ bot.command('hide', (ctx) => {                // переделать в реа�
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
 
+// const replies = {
+//   // text
+//   "i did not hit her": { type: 'text', value: 'https://www.youtube.com/watch?v=zLhoDB-ORLQ'}
+  
+//   // gif
+//   "nodejs": { type: 'gif', id: 'CgADBAADLQIAAlnKaVMm_HsznW30oQI' },
+
+//   // sticker
+//   "woah": { type: 'sticker', id: 'CAADAgAD5gADJQNSD34EF_pwQMgbAg' },
+// }
+
+
+bot.on('text', ctx => {
+  let cmd = ctx.message.text.toLowerCase()
+  // ЛОГИКА ЛОГИКА ЛОГИКА
+  const answer = cmd+cmd
+  ctx.reply(answer)
+})
 
 
 bot.command("connect", (ctx) =>{
