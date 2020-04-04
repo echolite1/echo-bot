@@ -82,7 +82,7 @@ bot.command('c', Telegraf.reply('Command c'))
 
 bot.command('curl', (ctx) => {
   const userAction = async () => {
-    const response = await fetch('https://api.telegram.org/bot1082570111:AAGEyxYplYm6E4QjScK8IMgcRx01hiLvSDw/forwardMessage?chat_id=438473347&from_chat_id=163700134&message_id='+ctx.state.command.args);
+    const response = await fetch('https://api.telegram.org/bot1082570111:AAGEyxYplYm6E4QjScK8IMgcRx01hiLvSDw/forwardMessage?df command=438473347&from_chat_id=163700134&message_id='+ctx.state.command.args);
     const myJson = await response.json(); //extract JSON from the http response
     console.log(myJson)
 
