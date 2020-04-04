@@ -89,6 +89,77 @@ bot.command('hide', (ctx) => {                // переделать в реа�
 })
 //    ==========================
 
+
+
+// const replies = {
+//   // text
+//   "i did not hit her": { type: 'text', value: 'https://www.youtube.com/watch?v=zLhoDB-ORLQ'}
+  
+//   // gif
+//   "nodejs": { type: 'gif', id: 'CgADBAADLQIAAlnKaVMm_HsznW30oQI' },
+
+//   // sticker
+//   "woah": { type: 'sticker', id: 'CAADAgAD5gADJQNSD34EF_pwQMgbAg' },
+// }
+
+
+
+var MongoClient = require('mongodb').MongoClient;
+var url = "mongodb://localhost:27017";
+
+bot.command("ban", (ctx) => {
+  const user_id = ctx.state.command.args
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+    // // var collection = db.collection('user_ids');
+    dbo.createCollection("user_ids", function(err, res) {
+      if (err) throw err
+      console.log("Collection user_ids created!")
+      ctx.reply("Collection user_ids created!")
+    })
+
+    var myobj = { name: "Alex", id: user_id };
+
+    dbo.collection("user_ids").insertOne(myobj, function(err, res) {
+      if (err) throw err;
+      console.log(user_id + " inserted");
+      ctx.reply(user_id + " inserted");
+    });
+    // ctx.reply(dbo.getCollection("user_ids"))
+    dbo.collection('user_ids').count(function(err, count) {
+      // assert.equal(null, err);
+      // assert.equal(4, count);
+      console.logcount
+      ctx.reply(count)
+    })
+    
+  })
+})
+
+bot.command("connect", (ctx) =>{
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    var dbo = db.db("mydb");
+    var query = { address: "Park Lane 38" };
+    dbo.collection("customers").find(query).toArray(function(err, result) {
+      if (err) throw err;
+      console.log(result);
+      console.log(ctx.state.command.args);
+      db.close();
+    });
+  });
+})
+
+
+
+bot.on('text', ctx => {
+  let cmd = ctx.message.text.toLowerCase()
+  // ЛОГИКА ЛОГИКА ЛОГИКА
+  const answer = cmd+cmd
+  ctx.reply(answer)
+})
+
 bot.startPolling()
 
 
