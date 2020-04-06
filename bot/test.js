@@ -24,9 +24,11 @@ const bot = new Telegraf(data.token, { contextType: CustomContext })
 const commandParts = require('./telegrafCommandParts'); // for args parsing
 bot.use(commandParts()) // for args parsing
 
-// available commands:      start, send(id,text)
 
-//const id = 163700134
+// commands:      start, help, send(id,text)
+// reactions:     onText, onA, onB
+
+
 const msg = 'the_text'
 const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
@@ -38,8 +40,9 @@ keysAdmin = Markup.inlineKeyboard([
 ])
 
 keysLink = Markup.inlineKeyboard([
-  [Markup.urlButton('★', 'https://play.google.com/')],
-  [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')]
+  [Markup.urlButton('Website', 'https://play.google.com/')],
+  [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')],
+  [Markup.callbackButton('Something', '1'), Markup.callbackButton('Dudos', '2')]
 ])
 //       =============================
 
@@ -54,6 +57,13 @@ bot.start((ctx) => {
     data.admins[0],
     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} ${msg}`,
     Extra.markup(keysAdmin)
+  )
+})
+
+bot.help(ctx => {
+  ctx.reply(
+    'This is your help', 
+    Extra.markup(keysLink)      // сделать кнопку в главное меню
   )
 })
 
