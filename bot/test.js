@@ -34,10 +34,12 @@ const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
 
 //            === КЛАВИАТУРЫ ===       +++ добавить кнопку вместо клавы и убрать только после аутент
-keysAdmin = Markup.inlineKeyboard([
-  Markup.callbackButton('Бан', 'ban'),
-  Markup.callbackButton('Удалить историю', 'del')
-])
+function get_keysAdmin(id) {
+  return Markup.inlineKeyboard([
+    Markup.callbackButton('Бан ' + id, 'ban ' + id + ' ' + "HAHA"),
+    Markup.callbackButton('Удалить историю', 'del')
+  ])
+}
 
 keysLink = Markup.inlineKeyboard([
   [Markup.urlButton('Website', 'https://play.google.com/')],
@@ -46,9 +48,31 @@ keysLink = Markup.inlineKeyboard([
 ])
 //       =============================
 
+function save_message(ctx) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+
+    dbo.createCollection("users_messages", function(err, res) {
+      if (err) throw err
+      console.log("Collection users_messages created!")
+      ctx.reply("Collection users_messages created!")
+    })
+
+    var myobj = {chat_id: ctx.chat.id, message: ctx.message.message_id}
+    dbo.collection("users_messages").insertOne(myobj, function(err, res) {
+      if (err) throw err
+      console.log(ctx.message + " inserted")
+      ctx.reply(ctx.message + " inserted")
+    })
+  })
+}
 
 //          === COMMANDS ===
 bot.start((ctx) => {
+
+  save_message(ctx)
+
   ctx.reply(
     `Привет ${ctx.chat.first_name}, это главное меню`,
     Extra.markup(keysLink)
@@ -56,7 +80,7 @@ bot.start((ctx) => {
   telegram.sendMessage(
     data.admins[0],
     `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} ${msg}`,
-    Extra.markup(keysAdmin)
+    Extra.markup(get_keysAdmin(ctx.chat.id))
   )
 })
 
@@ -84,28 +108,53 @@ bot.command("ban", (ctx) => {
   MongoClient.connect(url, function(err, db) {
     if (err) throw err
     var dbo = db.db("mydb")
-    // // var collection = db.collection('user_ids');
-    dbo.createCollection("user_ids", function(err, res) {
+    // // var collection = dbo.collection('user_ids');
+
+    // for INITIALIZATION
+    dbo.createCollection("black_list", function(err, res) {
       if (err) throw err
-      console.log("Collection user_ids created!")
-      ctx.reply("Collection user_ids created!")
+      console.log("Collection black_list created!")
+      ctx.reply("Collection black_list created!")
     })
 
-    var myobj = { name: "Alex", id: user_id };
+    var myobj = { name: ctx.chat.first_name, id: user_id }
 
-    dbo.collection("user_ids").insertOne(myobj, function(err, res) {
+    dbo.collection("black_list").insertOne(myobj, function(err, res) {
       if (err) throw err;
-      console.log(user_id + " inserted");
-      ctx.reply(user_id + " inserted");
+      console.log(user_id + " inserted")
+      ctx.reply(user_id + " inserted")
     });
     // ctx.reply(dbo.getCollection("user_ids"))
-    dbo.collection('user_ids').count(function(err, count) {
-      // assert.equal(null, err);
-      // assert.equal(4, count);
-      console.logcount
-      ctx.reply(count)
-    })
-    
+  })
+})
+
+bot.command("showC", (ctx) => {
+    MongoClient.connect(url, function(err, db) {
+      if (err) throw err
+      var dbo = db.db("mydb")
+
+      // dbo.collection('black_list').count(function(err, count) {
+      // // assert.equal(null, err);
+      // // assert.equal(4, count);
+      //   console.logcount
+      //   ctx.reply("There are " + count + " banned users")
+      // })
+      dbo.listCollections().toArray(function(err, collInfos) {
+      // collInfos is an array of collection info objects that look like:
+      // { name: 'test', options: {} }
+        // ctx.reply(collInfos)
+        for (i = 0; i < collInfos.length; i++) {
+          // ctx.reply(collInfos[i].name)
+          (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {
+            // ctx.reply(collInfos[i].name)
+            ctx.reply(items)
+          });
+        } 
+
+      });
+      // (dbo.collection('black_list')).find().toArray(function(err, items) {
+      //   ctx.reply(items)
+      // });
   })
 })
 
@@ -132,6 +181,36 @@ bot.action('A', ctx => {
 
 bot.action('B', ctx => {
   ctx.reply('Эта функция недоступна в данный момент ☹︎')
+})
+
+bot.action(/ban (\d+)/gi, (ctx) => {
+  const user_id = ctx.match[1]
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+    // // var collection = dbo.collection('user_ids');
+
+    // for INITIALIZATION
+
+    dbo.createCollection("black_list", function(err, res) {
+      if (err) throw err
+      console.log("Collection black_list created!")
+      ctx.reply("Collection black_list created!")
+    })
+
+    var myobj = {id: user_id};
+
+    dbo.collection("black_list").insertOne(myobj, function(err, res) {
+      if (err) throw err;
+      console.log(user_id + " inserted");
+      ctx.reply(user_id + " inserted");
+    });
+    // ctx.reply(dbo.getCollection("user_ids"))
+  })
+})
+
+bot.action('del', ctx => {
+  ctx.reply('Ничего не произошло')
 })
 
 bot.on('text', ctx => {
