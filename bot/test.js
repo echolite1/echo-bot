@@ -14,24 +14,19 @@ class CustomContext extends Telegraf.Context {
     console.log('contexy %j', update)
     super(update, telegram, options)
   }
-
   reply (...args) {
     console.log('reply called with args: %j', args)
     return super.reply(...args)
   }
 }
 const bot = new Telegraf(data.token, { contextType: CustomContext })
-const commandParts = require('./telegrafCommandParts'); // for args parsing
+const commandParts = require('./telegrafCommandParts') // for args parsing
 bot.use(commandParts()) // for args parsing
 
 
-// commands:      start, help, send(id,text)
-// reactions:     onText, onA, onB
-
-
-
-const msg = 'the_text'
-const tokenLink = `https://api.telegram.org/bot${data.token}/`
+// functions:     save_message
+// commands:      start, help, send(id,text), ban(id), showC
+// reactions:     onText, onA, onB, ban
 
 
 //            === КЛАВИАТУРЫ ===       +++ добавить кнопку вместо клавы и убрать только после аутент
@@ -52,7 +47,7 @@ keysLink = Markup.inlineKeyboard([
 //          === COMMANDS ===
 bot.start((ctx) => {
 
-  save_message(ctx)
+  save_usr_msg_id(ctx)     // NEW     // почему запоминает только старт?
 
   ctx.reply(
     `Привет ${ctx.chat.first_name}, это главное меню`,
@@ -60,7 +55,7 @@ bot.start((ctx) => {
   )
   telegram.sendMessage(
     data.admins[0],
-    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} ${msg}`,
+    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
     Extra.markup(get_keysAdmin(ctx.chat.id))
   )
 })
@@ -76,13 +71,13 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
     ctx.state.command.args.split(' ')[0], 
     ctx.state.command.args.split(' ')[1], 
     Extra.markup(keysLink)
-)) // (id_to, text_tolko_tak, extra)
+)) // (id_to, text, extra)
 //    ==========================
 
 
 //    ========== DB ============
-var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017";
+var MongoClient = require('mongodb').MongoClient
+var url = "mongodb://localhost:27017"
 
 // db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
 //                choose db                 - dbo = db.db("db_name")
@@ -91,87 +86,46 @@ var url = "mongodb://localhost:27017";
 //                list collections          - dbo.listCollections().toArray(function(err, collInfos) {...}
 //                find objs in collection   - dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {...}
 
-bot.command("ban", (ctx) => {        // can be deleted
-  const user_id = ctx.state.command.args
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err
-    var dbo = db.db("mydb")
-    // // var collection = dbo.collection('user_ids');
-
-    // for INITIALIZATION
-    dbo.createCollection("black_list", function(err, res) {
-      if (err) throw err
-      console.log("Collection black_list created!")
-      ctx.reply("Collection black_list created!")
-    })
-
-    var myobj = { name: ctx.chat.first_name, id: user_id }
-
-    dbo.collection("black_list").insertOne(myobj, function(err, res) {
-      if (err) throw err;
-      console.log(user_id + " inserted")
-      ctx.reply(user_id + " inserted")
-    });
-    // ctx.reply(dbo.getCollection("user_ids"))
-  })
-})
+// bot.command("ban", (ctx) => {        // can be deleted
+//   const user_id = ctx.state.command.args
+//   MongoClient.connect(url, function(err, db) {
+//     if (err) throw err
+//     var dbo = db.db("mydb")
+//     dbo.createCollection("black_list", function(err, res) { if (err) throw err }) // for INITIALIZATION
+//     var myobj = { id: user_id }
+//     dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err })
+//   })
+// })
 
 bot.command("showC", (ctx) => {     // show collections
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err
+  MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db("mydb")
     dbo.listCollections().toArray(function(err, collInfos) {
       for (i = 0; i < collInfos.length; i++) {
-        (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {
-          ctx.reply(items)
-        });
+        (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { ctx.reply(items) })
       } 
-    });
+    })
   })
 })
 
 bot.action(/ban (\d+)/gi, (ctx) => {      // reaction on button
-  const user_id = ctx.match[1]
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err
+  const user_id = ctx.match[1] // ЧТО ЭТО ????
+  MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db("mydb")
-    // // var collection = dbo.collection('user_ids');
-
-    // for INITIALIZATION
-    dbo.createCollection("black_list", function(err, res) {
-      if (err) throw err
-      console.log("Collection black_list created!")
-      ctx.reply("Collection black_list created!")
+    dbo.createCollection("black_list", function(err, res) { if (err) throw err })// for INITIALIZATION
+    var myobj = {id: user_id}
+    dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err // не распознает дубликаты
+      ctx.reply(user_id + " inserted to black list")
     })
-
-    var myobj = {id: user_id};
-
-    dbo.collection("black_list").insertOne(myobj, function(err, res) {
-      if (err) throw err;
-      console.log(user_id + " inserted");
-      ctx.reply(user_id + " inserted");
-    });
-    // ctx.reply(dbo.getCollection("user_ids"))
   })
 })
 
-function save_message(ctx) {   // saving msg_id of the each user
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err
+function save_usr_msg_id(ctx) {   // saving msg_id of the each user
+  MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db("mydb")
-
-    dbo.createCollection("users_messages", function(err, res) {
-      if (err) throw err
-      console.log("Collection users_messages created!")
-      ctx.reply("Collection users_messages created!")
-    })
-
-    var myobj = {chat_id: ctx.chat.id, message: ctx.message.message_id}
-    dbo.collection("users_messages").insertOne(myobj, function(err, res) {
-      if (err) throw err
-      console.log(ctx.message + " inserted")
-      ctx.reply(ctx.message + " inserted")
-    })
+    dbo.createCollection("users_messages", function(err, res) { if (err) throw err })
+    var myobj = {id: ctx.chat.id, msg_id: ctx.message.message_id}
+    dbo.collection("users_messages").insertOne(myobj, function(err, res) { if (err) throw err })
   })
 }
 //    ========== DB ============
@@ -193,12 +147,12 @@ bot.action('del', ctx => {
 
 bot.on('text', ctx => {
   const usrText = ctx.message.text
-  //const answer = usrText
   ctx.telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
   ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
   telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
 })
 //       =============================
+
 
 bot.startPolling()
 
@@ -211,32 +165,10 @@ bot.startPolling()
 // bot.command('a', (ctx) => ctx.reply('Command a'))
 // bot.command('b', ({ reply }) => reply('Command b'))
 // bot.command('c', Telegraf.reply('Command c'))
-
 // telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
 // telegram.forwardMessage(438473347, 163700134, ctx.state.command.args) //(to, from, msg_id)
 // telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
-// ctx.reply('Сообщение ' + ctx.state.command.args + ' было спрятано')
-// telegram.sendMessage(163700134, ctx.chat)
-// bot.on('message', (ctx) => ctx.reply('???????')) // перебивает все, включая команды
-//         message = любое сообщение юзера
-
-// bot.on('photo', (ctx) => ctx.telegram.sendMessage(
-//   ctx.chat.id, 
-//   "text response on photo with keysLink", 
-//   Extra.markup(keysLink)
-// )) // перебивает всё, но реагирует только на фото
-//bot.on(['forward', 'sticker'], (ctx) => console.log('YYY', ctx.fetch.id)) // a OR b
-
-// ==================
-// const menu = new TelegrafInlineMenu(ctx => `Это классное меню!`)  // создаем тип "menu"
-// menu.setCommand('play')
-// menu.simpleButton('Логин', '1', {
-//   doFunc: ctx => ctx.reply('Вводи:') // hide(msg_id + 1)
-// })
-// menu.simpleButton('Пароль', '2', {
-//   doFunc: ctx => ctx.reply('Вводи:')
-// })
-// bot.use(menu.init())
+// bot.on(['forward', 'sticker'], (ctx) => console.log('YYY', ctx.fetch.id)) // a OR b
 // ===================
 // bot.command('hide', (ctx) => {                // переделать в реакцию
 //   const userAction = async () => {
@@ -253,16 +185,5 @@ bot.startPolling()
 //   }
 //   userAction()
 // })
-// ===================
-// const replies = {
-//   // text
-//   "i did not hit her": { type: 'text', value: 'https://www.youtube.com/watch?v=zLhoDB-ORLQ'}
-  
-//   // gif
-//   "nodejs": { type: 'gif', id: 'CgADBAADLQIAAlnKaVMm_HsznW30oQI' },
-
-//   // sticker
-//   "woah": { type: 'sticker', id: 'CAADAgAD5gADJQNSD34EF_pwQMgbAg' },
-// }
 // ===================
 // market://details?id=com.google.android.apps.maps
