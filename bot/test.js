@@ -91,7 +91,7 @@ var url = "mongodb://localhost:27017";
 //                list collections          - dbo.listCollections().toArray(function(err, collInfos) {...}
 //                find objs in collection   - dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {...}
 
-bot.command("ban", (ctx) => {
+bot.command("ban", (ctx) => {        // can be deleted
   const user_id = ctx.state.command.args
   MongoClient.connect(url, function(err, db) {
     if (err) throw err
@@ -116,52 +116,21 @@ bot.command("ban", (ctx) => {
   })
 })
 
-bot.command("showC", (ctx) => {
-    MongoClient.connect(url, function(err, db) {
-      if (err) throw err
-      var dbo = db.db("mydb")
-
-      // dbo.collection('black_list').count(function(err, count) {
-      // // assert.equal(null, err);
-      // // assert.equal(4, count);
-      //   console.logcount
-      //   ctx.reply("There are " + count + " banned users")
-      // })
-      dbo.listCollections().toArray(function(err, collInfos) {
-      // collInfos is an array of collection info objects that look like:
-      // { name: 'test', options: {} }
-        // ctx.reply(collInfos)
-        for (i = 0; i < collInfos.length; i++) {
-          // ctx.reply(collInfos[i].name)
-          (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {
-            // ctx.reply(collInfos[i].name)
-            ctx.reply(items)
-          });
-        } 
-
-      });
-      // (dbo.collection('black_list')).find().toArray(function(err, items) {
-      //   ctx.reply(items)
-      // });
+bot.command("showC", (ctx) => {     // show collections
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+    dbo.listCollections().toArray(function(err, collInfos) {
+      for (i = 0; i < collInfos.length; i++) {
+        (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {
+          ctx.reply(items)
+        });
+      } 
+    });
   })
 })
 
-bot.command("connect", (ctx) =>{
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err;
-    var dbo = db.db("mydb");
-    var query = { address: "Park Lane 38" };
-    dbo.collection("customers").find(query).toArray(function(err, result) {
-      if (err) throw err;
-      console.log(result);
-      console.log(ctx.state.command.args);
-      db.close();
-    });
-  });
-})
-
-
-bot.action(/ban (\d+)/gi, (ctx) => {
+bot.action(/ban (\d+)/gi, (ctx) => {      // reaction on button
   const user_id = ctx.match[1]
   MongoClient.connect(url, function(err, db) {
     if (err) throw err
@@ -169,7 +138,6 @@ bot.action(/ban (\d+)/gi, (ctx) => {
     // // var collection = dbo.collection('user_ids');
 
     // for INITIALIZATION
-
     dbo.createCollection("black_list", function(err, res) {
       if (err) throw err
       console.log("Collection black_list created!")
@@ -187,7 +155,7 @@ bot.action(/ban (\d+)/gi, (ctx) => {
   })
 })
 
-function save_message(ctx) {
+function save_message(ctx) {   // saving msg_id of the each user
   MongoClient.connect(url, function(err, db) {
     if (err) throw err
     var dbo = db.db("mydb")
@@ -206,9 +174,8 @@ function save_message(ctx) {
     })
   })
 }
-
-
 //    ========== DB ============
+
 
 //       ========= REACTIONS =========
 bot.action('A', ctx => {
