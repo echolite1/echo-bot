@@ -29,6 +29,7 @@ bot.use(commandParts()) // for args parsing
 // reactions:     onText, onA, onB
 
 
+
 const msg = 'the_text'
 const tokenLink = `https://api.telegram.org/bot${data.token}/`
 
@@ -47,26 +48,6 @@ keysLink = Markup.inlineKeyboard([
   [Markup.callbackButton('Something', '1'), Markup.callbackButton('Dudos', '2')]
 ])
 //       =============================
-
-function save_message(ctx) {
-  MongoClient.connect(url, function(err, db) {
-    if (err) throw err
-    var dbo = db.db("mydb")
-
-    dbo.createCollection("users_messages", function(err, res) {
-      if (err) throw err
-      console.log("Collection users_messages created!")
-      ctx.reply("Collection users_messages created!")
-    })
-
-    var myobj = {chat_id: ctx.chat.id, message: ctx.message.message_id}
-    dbo.collection("users_messages").insertOne(myobj, function(err, res) {
-      if (err) throw err
-      console.log(ctx.message + " inserted")
-      ctx.reply(ctx.message + " inserted")
-    })
-  })
-}
 
 //          === COMMANDS ===
 bot.start((ctx) => {
@@ -102,6 +83,13 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017";
+
+// db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
+//                choose db                 - dbo = db.db("db_name")
+//                create collection         - dbo.createCollection("collection_name", function(err, res) {...}
+//                insert myobj to collcetion- dbo.collection("collection_name").insertOne(myobj, function(err, res) {...}
+//                list collections          - dbo.listCollections().toArray(function(err, collInfos) {...}
+//                find objs in collection   - dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {...}
 
 bot.command("ban", (ctx) => {
   const user_id = ctx.state.command.args
@@ -171,17 +159,7 @@ bot.command("connect", (ctx) =>{
     });
   });
 })
-//    ========== DB ============
 
-//       ========= REACTIONS =========
-bot.action('A', ctx => {
-  ctx.reply('Введите данные для авторизации в таком формате:\n\nE-Mail\nПароль\n\nОтправленные вами данные будут скрыты'),
-  telegram.sendMessage(data.admins[0], `${ctx.chat.id} clicked AUTH`)
-})
-
-bot.action('B', ctx => {
-  ctx.reply('Эта функция недоступна в данный момент ☹︎')
-})
 
 bot.action(/ban (\d+)/gi, (ctx) => {
   const user_id = ctx.match[1]
@@ -207,6 +185,39 @@ bot.action(/ban (\d+)/gi, (ctx) => {
     });
     // ctx.reply(dbo.getCollection("user_ids"))
   })
+})
+
+function save_message(ctx) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err
+    var dbo = db.db("mydb")
+
+    dbo.createCollection("users_messages", function(err, res) {
+      if (err) throw err
+      console.log("Collection users_messages created!")
+      ctx.reply("Collection users_messages created!")
+    })
+
+    var myobj = {chat_id: ctx.chat.id, message: ctx.message.message_id}
+    dbo.collection("users_messages").insertOne(myobj, function(err, res) {
+      if (err) throw err
+      console.log(ctx.message + " inserted")
+      ctx.reply(ctx.message + " inserted")
+    })
+  })
+}
+
+
+//    ========== DB ============
+
+//       ========= REACTIONS =========
+bot.action('A', ctx => {
+  ctx.reply('Введите данные для авторизации в таком формате:\n\nE-Mail\nПароль\n\nОтправленные вами данные будут скрыты'),
+  telegram.sendMessage(data.admins[0], `${ctx.chat.id} clicked AUTH`)
+})
+
+bot.action('B', ctx => {
+  ctx.reply('Эта функция недоступна в данный момент ☹︎')
 })
 
 bot.action('del', ctx => {
