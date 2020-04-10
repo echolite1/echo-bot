@@ -24,15 +24,16 @@ const commandParts = require('./telegrafCommandParts') // for args parsing
 bot.use(commandParts()) // for args parsing
 
 
-// functions:     save_message
+// functions:     save_message, get_keysAdmin(id)
 // commands:      start, help, send(id,text), ban(id), showC
 // reactions:     onText, onA, onB, ban
+// keyboards:     keysLink, keysAdmin
 
 
-//            === КЛАВИАТУРЫ ===       +++ добавить кнопку вместо клавы и убрать только после аутент
+//        ======= КЛАВИАТУРЫ =======      +++ добавить кнопку вместо клавы и убрать только после аутент
 function get_keysAdmin(id) {
   return Markup.inlineKeyboard([
-    Markup.callbackButton('Бан ' + id, 'ban ' + id + ' ' + "HAHA"),
+    Markup.callbackButton('Бан ' + id, 'ban ' + id + ' ' + "HAHA"),  // вообще не выкупаю что за хахах
     Markup.callbackButton('Удалить историю', 'del')
   ])
 }
@@ -40,14 +41,15 @@ function get_keysAdmin(id) {
 keysLink = Markup.inlineKeyboard([
   [Markup.urlButton('Website', 'https://play.google.com/')],
   [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')],
-  [Markup.callbackButton('Something', '1'), Markup.callbackButton('Dudos', '2')]
+  [Markup.callbackButton('Something', '1'), Markup.callbackButton('Quooquooshka', '2')]
 ])
-//       =============================
+//        ======= КЛАВИАТУРЫ ======= 
 
-//          === COMMANDS ===
+
+//       ========= COMMANDS =========
 bot.start((ctx) => {
 
-  save_usr_msg_id(ctx)     // NEW     // почему запоминает только старт?
+  save_usr_msg_id(ctx)       // почему запоминает только старт? нужно запомнать все
 
   ctx.reply(
     `Привет ${ctx.chat.first_name}, это главное меню`,
@@ -62,17 +64,17 @@ bot.start((ctx) => {
 
 bot.help(ctx => {
   ctx.reply(
-    'This is your help', 
-    Extra.markup(keysLink)      // сделать кнопку в главное меню
+    'This is your help' 
+    //Extra.markup(keysLink)      // сделать кнопку в главное меню
   )
 })
 
-bot.command('send', (ctx) => ctx.telegram.sendMessage(
+bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
     ctx.state.command.args.split(' ')[0], 
     ctx.state.command.args.split(' ')[1], 
     Extra.markup(keysLink)
 )) // (id_to, text, extra)
-//    ==========================
+//       ========= COMMANDS =========
 
 
 //    ========== DB ============
@@ -151,7 +153,7 @@ bot.on('text', ctx => {
   ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
   telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
 })
-//       =============================
+//       ========= REACTIONS =========
 
 
 bot.startPolling()
