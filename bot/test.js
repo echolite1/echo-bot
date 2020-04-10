@@ -31,8 +31,9 @@ bot.use(commandParts()) // for args parsing
 // functions:     save_message, get_keysAdmin(id)
 // commands:      start, help, send(id,text), ban(id), showC
 // reactions:     onText, onA, onB, ban
-// keyboards:     keysLink, keysAdmin
+// keyboards:     keysMain, keysAdmin, keysBack
 
+// TODO: 
 
 //        ======= КЛАВИАТУРЫ =======      +++ добавить кнопку вместо клавы и убрать только после аутент
 function get_keysAdmin(id) {
@@ -42,7 +43,11 @@ function get_keysAdmin(id) {
   ])
 }
 
-keysLink = Markup.inlineKeyboard([
+keysBack = Markup.inlineKeyboard([
+  [Markup.callbackButton('Главное меню', 'mainMenu'), Markup.callbackButton('Авторизация', 'A')]
+])
+
+keysMain = Markup.inlineKeyboard([
   [Markup.urlButton('Website', 'https://play.google.com/')],
   [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')],
   [Markup.callbackButton('Something', '1'), Markup.callbackButton('Quooquooshka', '2')]
@@ -58,7 +63,7 @@ bot.start((ctx) => {
 
       ctx.reply(
         `Привет ${ctx.chat.first_name}, это главное меню`,
-        Extra.markup(keysLink)
+        Extra.markup(keysMain)
       )
 
       telegram.sendMessage(
@@ -72,16 +77,17 @@ bot.start((ctx) => {
 
 bot.help(ctx => {
   ctx.reply(
-    'This is your help' 
-    //Extra.markup(keysLink)      // сделать кнопку в главное меню
+    'This is your help. This is your help. \nThis is your help. This is your help. \nThis is your help. This is your help.', 
+    Extra.markup(keysBack)
   )
 })
 
-// bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
-//     ctx.state.command.args.split(' ')[0], 
-//     ctx.state.command.args.split(' ')[1], 
-//     Extra.markup(keysLink)
-// )) // (id_to, text, extra)
+
+bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
+    ctx.state.command.args.split(' ')[0], 
+    ctx.state.command.args.split(' ')[1], 
+    Extra.markup(keysMain)
+)) // (id_to, text, extra)
 //       ========= COMMANDS =========
 
 
@@ -116,8 +122,6 @@ MongoClient.connect(url, function(err, db) { if (err) throw err
 //   })
 // })
 
-
-
 bot.command("showC", (ctx) => {     // show collections
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
@@ -125,7 +129,8 @@ bot.command("showC", (ctx) => {     // show collections
       for (i = 0; i < collInfos.length; i++) {
         ctx.reply(collInfos[i].name),
         (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { 
-          ctx.reply(items) })
+          ctx.reply(items) 
+        })
       } 
     })
   })
@@ -136,9 +141,9 @@ bot.action(/ban (\d+)/gi, (ctx) => {
   const cur_chat_id = ctx.match[1]
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
-    var myobj = {chat_id: ctx.match[1]}
-    dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err // не распознает дубликаты
-      ctx.reply(ctx.match[1] + " inserted to black list")
+    var myobj = {chat_id: cur_chat_id}
+    dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err 
+      ctx.reply(cur_chat_id + " inserted to black list")
     })
   })
 })
@@ -187,11 +192,25 @@ bot.action('del', ctx => {
   ctx.reply('Ничего не произошло')
 })
 
+bot.action('mainMenu', ctx => {
+  ctx.reply(
+    `Привет ${ctx.chat.first_name}, это главное меню`,
+    Extra.markup(keysMain)
+  )
+})
+
 bot.on('text', ctx => {
+
+  save_usr_msg_id(ctx)
+
   const usrText = ctx.message.text
   ctx.telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
   ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
   telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
+})
+
+bot.on('message', ctx => {
+  save_usr_msg_id(ctx)
 })
 //       ========= REACTIONS =========
 
