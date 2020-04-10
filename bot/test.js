@@ -19,8 +19,12 @@ class CustomContext extends Telegraf.Context {
     return super.reply(...args)
   }
 }
+
+
+
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 const commandParts = require('./telegrafCommandParts') // for args parsing
+
 bot.use(commandParts()) // for args parsing
 
 
@@ -33,8 +37,8 @@ bot.use(commandParts()) // for args parsing
 //        ======= КЛАВИАТУРЫ =======      +++ добавить кнопку вместо клавы и убрать только после аутент
 function get_keysAdmin(id) {
   return Markup.inlineKeyboard([
-    Markup.callbackButton('Бан ' + id, 'ban ' + id + ' ' + "HAHA"),  // вообще не выкупаю что за хахах
-    Markup.callbackButton('Удалить историю', 'del')
+    Markup.callbackButton('Бан ' + id, 'ban ' + id),
+    Markup.callbackButton('Удалить историю у ' + id, 'del ' + id)
   ])
 }
 
@@ -43,23 +47,27 @@ keysLink = Markup.inlineKeyboard([
   [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')],
   [Markup.callbackButton('Something', '1'), Markup.callbackButton('Quooquooshka', '2')]
 ])
-//        ======= КЛАВИАТУРЫ ======= 
 
+//        ======= КЛАВИАТУРЫ ======= 
 
 //       ========= COMMANDS =========
 bot.start((ctx) => {
+  (async () => {
+    if (await not_in_ban(ctx.chat.id)){
+      save_usr_msg_id(ctx)       // почему запоминает только старт? нужно запомнать все
 
-  save_usr_msg_id(ctx)       // почему запоминает только старт? нужно запомнать все
+      ctx.reply(
+        `Привет ${ctx.chat.first_name}, это главное меню`,
+        Extra.markup(keysLink)
+      )
 
-  ctx.reply(
-    `Привет ${ctx.chat.first_name}, это главное меню`,
-    Extra.markup(keysLink)
-  )
-  telegram.sendMessage(
-    data.admins[0],
-    `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
-    Extra.markup(get_keysAdmin(ctx.chat.id))
-  )
+      telegram.sendMessage(
+        data.admins[0],
+        `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
+        Extra.markup(get_keysAdmin(ctx.chat.id))
+      )
+    }
+  })()
 })
 
 bot.help(ctx => {
@@ -69,17 +77,26 @@ bot.help(ctx => {
   )
 })
 
-bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
-    ctx.state.command.args.split(' ')[0], 
-    ctx.state.command.args.split(' ')[1], 
-    Extra.markup(keysLink)
-)) // (id_to, text, extra)
+// bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
+//     ctx.state.command.args.split(' ')[0], 
+//     ctx.state.command.args.split(' ')[1], 
+//     Extra.markup(keysLink)
+// )) // (id_to, text, extra)
 //       ========= COMMANDS =========
 
 
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient
 var url = "mongodb://localhost:27017"
+var bot_db = "bot_db_4"
+
+MongoClient.connect(url, function(err, db) { if (err) throw err
+  var dbo = db.db(bot_db)
+  dbo.createCollection("black_list", function(err, res) { if (err) throw err })
+  dbo.createCollection("users_messages", function(err, res) { if (err) throw err })
+  // db.close()
+})  
+
 
 // db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
 //                choose db                 - dbo = db.db("db_name")
@@ -99,33 +116,56 @@ var url = "mongodb://localhost:27017"
 //   })
 // })
 
+
+
 bot.command("showC", (ctx) => {     // show collections
   MongoClient.connect(url, function(err, db) { if (err) throw err
-    var dbo = db.db("mydb")
+    var dbo = db.db(bot_db)
     dbo.listCollections().toArray(function(err, collInfos) {
       for (i = 0; i < collInfos.length; i++) {
-        (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { ctx.reply(items) })
+        ctx.reply(collInfos[i].name),
+        (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { 
+          ctx.reply(items) })
       } 
     })
   })
 })
 
-bot.action(/ban (\d+)/gi, (ctx) => {      // reaction on button
-  const user_id = ctx.match[1] // ЧТО ЭТО ????
+
+bot.action(/ban (\d+)/gi, (ctx) => {  
+  const cur_chat_id = ctx.match[1]
   MongoClient.connect(url, function(err, db) { if (err) throw err
-    var dbo = db.db("mydb")
-    dbo.createCollection("black_list", function(err, res) { if (err) throw err })// for INITIALIZATION
-    var myobj = {id: user_id}
+    var dbo = db.db(bot_db)
+    var myobj = {chat_id: ctx.match[1]}
     dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err // не распознает дубликаты
-      ctx.reply(user_id + " inserted to black list")
+      ctx.reply(ctx.match[1] + " inserted to black list")
     })
   })
 })
 
+
+async function not_in_ban(check_id) {
+  const client = await MongoClient.connect(url, { useNewUrlParser: true })
+      .catch(err => { console.log(err); })
+  if (!client) {
+      return;
+  }
+  const dbo = client.db(bot_db)
+  let blc = dbo.collection("black_list")
+  var items = await blc.find({chat_id: check_id.toString() }).toArray()//
+
+  if (items.length){
+    return false
+  } else {
+    return true
+  }
+  // return items[0].id
+}
+
+
 function save_usr_msg_id(ctx) {   // saving msg_id of the each user
   MongoClient.connect(url, function(err, db) { if (err) throw err
-    var dbo = db.db("mydb")
-    dbo.createCollection("users_messages", function(err, res) { if (err) throw err })
+    var dbo = db.db(bot_db)
     var myobj = {id: ctx.chat.id, msg_id: ctx.message.message_id}
     dbo.collection("users_messages").insertOne(myobj, function(err, res) { if (err) throw err })
   })
