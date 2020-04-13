@@ -35,7 +35,7 @@ bot.use(commandParts()) // for args parsing
 function get_keysAdmin(id) {
   return Markup.inlineKeyboard([
     Markup.callbackButton('Бан ' + id, 'ban ' + id),
-    Markup.callbackButton('Удалить историю у ' + id, 'del ' + id)
+    Markup.callbackButton('Удалить историю у ' + id, 'del ' + id)     // del does not work yet
   ])
 }
 
@@ -54,7 +54,7 @@ keysMain = Markup.inlineKeyboard([
 
 //       ========= COMMANDS =========
 bot.start((ctx) => {
-  (async () => {
+  (async () => { // продублировать везде
     if (await not_in_ban(ctx.chat.id)){
       save_usr_msg_id(ctx)
 
@@ -68,6 +68,7 @@ bot.start((ctx) => {
         `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
         Extra.markup(get_keysAdmin(ctx.chat.id))
       )
+      
       telegram.sendMessage(
         data.admins[0],
         `/send ${ctx.chat.id} the_text`
@@ -75,7 +76,7 @@ bot.start((ctx) => {
 
       telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
     }
-  })()
+  })() // что это ()
 })
 
 bot.help(ctx => {
@@ -96,7 +97,7 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать 
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient
 var url = "mongodb://localhost:27017"
-var bot_db = "bot_db_4"         // почему бот_дб_4 ахахааххахахах
+var bot_db = "bot_db_4"
 
 MongoClient.connect(url, function(err, db) { if (err) throw err
   var dbo = db.db(bot_db)
