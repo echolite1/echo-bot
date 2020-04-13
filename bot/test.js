@@ -19,23 +19,19 @@ class CustomContext extends Telegraf.Context {
     return super.reply(...args)
   }
 }
-
-
-
 const bot = new Telegraf(data.token, { contextType: CustomContext })
 const commandParts = require('./telegrafCommandParts') // for args parsing
-
 bot.use(commandParts()) // for args parsing
 
 
-// functions:     save_message, get_keysAdmin(id)
-// commands:      start, help, send(id,text), ban(id), showC
-// reactions:     onText, onA, onB, ban
+// functions:     save_usr_msg_id(ctx), get_keysAdmin(id)
+// commands:      start, help, send(id,text), showC
+// reactions:     onText, onMessage, onA, onB, ban
 // keyboards:     keysMain, keysAdmin, keysBack
 
 // TODO: 
 
-//        ======= КЛАВИАТУРЫ =======      +++ добавить кнопку вместо клавы и убрать только после аутент
+//        ======= КЛАВИАТУРЫ =======
 function get_keysAdmin(id) {
   return Markup.inlineKeyboard([
     Markup.callbackButton('Бан ' + id, 'ban ' + id),
@@ -55,11 +51,12 @@ keysMain = Markup.inlineKeyboard([
 
 //        ======= КЛАВИАТУРЫ ======= 
 
+
 //       ========= COMMANDS =========
 bot.start((ctx) => {
   (async () => {
     if (await not_in_ban(ctx.chat.id)){
-      save_usr_msg_id(ctx)       // почему запоминает только старт? нужно запомнать все
+      save_usr_msg_id(ctx)
 
       ctx.reply(
         `Привет ${ctx.chat.first_name}, это главное меню`,
@@ -71,23 +68,28 @@ bot.start((ctx) => {
         `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
         Extra.markup(get_keysAdmin(ctx.chat.id))
       )
+      telegram.sendMessage(
+        data.admins[0],
+        `/send ${ctx.chat.id} the_text`
+      )
+
+      telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
     }
   })()
 })
 
 bot.help(ctx => {
   ctx.reply(
-    'This is your help. This is your help. \nThis is your help. This is your help. \nThis is your help. This is your help.', 
-    Extra.markup(keysBack)
+    'This is your help. This is your help. \nThis is your help. This is your help.', 
+    Extra.markup(keysBack), 
+    telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
   )
 })
 
-
 bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
     ctx.state.command.args.split(' ')[0], 
-    ctx.state.command.args.split(' ')[1], 
-    Extra.markup(keysMain)
-)) // (id_to, text, extra)
+    ctx.state.command.args.split(' ')[1]
+)) // (id_to, text)
 //       ========= COMMANDS =========
 
 
@@ -103,25 +105,6 @@ MongoClient.connect(url, function(err, db) { if (err) throw err
   // db.close()
 })  
 
-
-// db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
-//                choose db                 - dbo = db.db("db_name")
-//                create collection         - dbo.createCollection("collection_name", function(err, res) {...}
-//                insert myobj to collcetion- dbo.collection("collection_name").insertOne(myobj, function(err, res) {...}
-//                list collections          - dbo.listCollections().toArray(function(err, collInfos) {...}
-//                find objs in collection   - dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {...}
-
-// bot.command("ban", (ctx) => {        // can be deleted
-//   const user_id = ctx.state.command.args
-//   MongoClient.connect(url, function(err, db) {
-//     if (err) throw err
-//     var dbo = db.db("mydb")
-//     dbo.createCollection("black_list", function(err, res) { if (err) throw err }) // for INITIALIZATION
-//     var myobj = { id: user_id }
-//     dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err })
-//   })
-// })
-
 bot.command("showC", (ctx) => {     // show collections
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
@@ -136,7 +119,6 @@ bot.command("showC", (ctx) => {     // show collections
   })
 })
 
-
 bot.action(/ban (\d+)/gi, (ctx) => {  
   const cur_chat_id = ctx.match[1]
   MongoClient.connect(url, function(err, db) { if (err) throw err
@@ -148,25 +130,23 @@ bot.action(/ban (\d+)/gi, (ctx) => {
   })
 })
 
-
-async function not_in_ban(check_id) {
+async function not_in_ban(check_id) {           // проверка есть ли уже айди в коллекции
   const client = await MongoClient.connect(url, { useNewUrlParser: true })
-      .catch(err => { console.log(err); })
+      .catch(err => { console.log(err) })
   if (!client) {
-      return;
+    return
   }
   const dbo = client.db(bot_db)
   let blc = dbo.collection("black_list")
-  var items = await blc.find({chat_id: check_id.toString() }).toArray()//
+  var items = await blc.find({chat_id: check_id.toString()}).toArray()
 
-  if (items.length){
+  if (items.length){          // что это значит???
     return false
   } else {
     return true
   }
   // return items[0].id
 }
-
 
 function save_usr_msg_id(ctx) {   // saving msg_id of the each user
   MongoClient.connect(url, function(err, db) { if (err) throw err
@@ -189,7 +169,7 @@ bot.action('B', ctx => {
 })
 
 bot.action('del', ctx => {
-  ctx.reply('Ничего не произошло')
+  ctx.reply('Ничего не произошло')      //пока что бесполезное
 })
 
 bot.action('mainMenu', ctx => {
@@ -210,7 +190,8 @@ bot.on('text', ctx => {
 })
 
 bot.on('message', ctx => {
-  save_usr_msg_id(ctx)
+  //save_usr_msg_id(ctx)
+  telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
 })
 //       ========= REACTIONS =========
 
@@ -248,3 +229,22 @@ bot.startPolling()
 // })
 // ===================
 // market://details?id=com.google.android.apps.maps
+
+
+// db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
+//                choose db                 - dbo = db.db("db_name")
+//                create collection         - dbo.createCollection("collection_name", function(err, res) {...}
+//                insert myobj to collcetion- dbo.collection("collection_name").insertOne(myobj, function(err, res) {...}
+//                list collections          - dbo.listCollections().toArray(function(err, collInfos) {...}
+//                find objs in collection   - dbo.collection(collInfos[i].name)).find().toArray(function(err, items) {...}
+
+// bot.command("ban", (ctx) => {        // can be deleted
+//   const user_id = ctx.state.command.args
+//   MongoClient.connect(url, function(err, db) {
+//     if (err) throw err
+//     var dbo = db.db("mydb")
+//     dbo.createCollection("black_list", function(err, res) { if (err) throw err }) // for INITIALIZATION
+//     var myobj = { id: user_id }
+//     dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err })
+//   })
+// })
