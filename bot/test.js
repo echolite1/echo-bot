@@ -94,7 +94,7 @@ bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать 
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient
 var url = "mongodb://localhost:27017"
-var bot_db = "bot_db_4"
+var bot_db = "bot_db_5"
 
 MongoClient.connect(url, function(err, db) { if (err) throw err
   var dbo = db.db(bot_db)
