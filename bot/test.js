@@ -11,11 +11,11 @@ const telegram = new Telegram(data.token, {
 })
 class CustomContext extends Telegraf.Context {
   constructor (update, telegram, options) {
-    console.log('contexy %j', update)
+    console.log('contexy %j', update, '\n')
     super(update, telegram, options)
   }
   reply (...args) {
-    console.log('reply called with args: %j', args)
+    console.log('reply called with args: %j', args, '\n')
     return super.reply(...args)
   }
 }
@@ -24,18 +24,22 @@ const commandParts = require('./telegrafCommandParts') // for args parsing
 bot.use(commandParts()) // for args parsing
 
 
-// functions:     save_usr_msg_id(ctx), get_keysAdmin(id)
-// commands:      start, help, send(id,text), showC
-// reactions:     onText, onMessage, onA, onB, ban
-// keyboards:     keysMain, keysAdmin, keysBack
+// functions:           saveUserMsgId(ctx), keysAdmin(id), notBanned
 
-// TODO: 
+//       commands:      start, help
+// admin commands:      send(id*text), showC
+
+//       reactions:     onText, onMessage, onA, onB
+// admin reactions:     ban, remove, clearHistory
+
+// keyboards:           keysMain, keysAdmin, keysBack
+
 
 //        ======= КЛАВИАТУРЫ =======
-function get_keysAdmin(id) {
+function keysAdmin(id) {
   return Markup.inlineKeyboard([
-    Markup.callbackButton('Бан ' + id, 'ban ' + id),
-    Markup.callbackButton('Удалить историю у ' + id, 'del ' + id)     // del does not work yet
+    [Markup.callbackButton('Бан', 'ban ' + id), Markup.callbackButton('Разбанить', 'remove ' + id)],
+    [Markup.callbackButton('Удалить историю', 'clearHistory ' + id)],     // clearHistory does not work yet
   ])
 }
 
@@ -45,73 +49,77 @@ keysBack = Markup.inlineKeyboard([
 
 keysMain = Markup.inlineKeyboard([
   [Markup.urlButton('Website', 'https://play.google.com/')],
-  [Markup.callbackButton('🅰uthorisation', 'A'), Markup.callbackButton('🅱utton', 'B')],
-  [Markup.callbackButton('Something', '1'), Markup.callbackButton('Quooquooshka', '2')]
+  [Markup.callbackButton('Авторизация', 'A'), Markup.callbackButton('Буттон', 'B')]
 ])
 
 //        ======= КЛАВИАТУРЫ ======= 
 
 
 //       ========= COMMANDS =========
-bot.start((ctx) => {
-  (async () => { // продублировать везде
-    if (await not_in_ban(ctx.chat.id)){
-      save_usr_msg_id(ctx)
+bot.start(ctx => {
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
 
-      ctx.reply(
-        `Привет ${ctx.chat.first_name}, это главное меню`,
+      saveUserMsgId(ctx)
+
+      telegram.sendMessage(
+        ctx.chat.id, `Привет ${ctx.chat.first_name}, это главное меню`,
         Extra.markup(keysMain)
       )
 
       telegram.sendMessage(
-        data.admins[0],
-        `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}\n/send ${ctx.chat.id} the_text`,
-        Extra.markup(get_keysAdmin(ctx.chat.id))
+        data.admins[0], `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}`,
+        Extra.markup(keysAdmin(ctx.chat.id))
       )
 
-      telegram.sendMessage(
-        data.admins[0],
-        `/send ${ctx.chat.id} the_text`
-      )
+      telegram.sendMessage(data.admins[0], `/send ${ctx.chat.id}*the_text`)
 
       telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
     }
-  })() // что это ()
+  })()
 })
 
 bot.help(ctx => {
-  ctx.reply(
-    'This is your help. This is your help. \nThis is your help. This is your help.', 
-    Extra.markup(keysBack), 
-    telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
-  )
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      telegram.sendMessage(
+        ctx.chat.id, `This is your help. This is your help. \nThis is your help. This is your help.`,
+        Extra.markup(keysBack)
+      )
+      telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
+    }
+  })()
 })
 
-bot.command('send', (ctx) => ctx.telegram.sendMessage(        // сделать сложный парсер
-    ctx.state.command.args.split(' ')[0], 
-    ctx.state.command.args.split(' ')[1]
-)) // (id_to, text)
+bot.command('send', ctx => 
+  ctx.telegram.sendMessage(        // сделать сложный парсер
+    ctx.state.command.args.split('*')[0], 
+    ctx.state.command.args.split('*')[1]
+  )
+) // (id_to, text)
 //       ========= COMMANDS =========
 
 
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient
-var url = "mongodb://localhost:27017"
-var bot_db = "bot_db_5"
+const url = 'mongodb://localhost:27017'
+const bot_db = 'bot_db_2'
+const collMsg = 'userMessages'
+const collBlack = 'blacklist'
 
 MongoClient.connect(url, function(err, db) { if (err) throw err
   var dbo = db.db(bot_db)
-  dbo.createCollection("black_list", function(err, res) { if (err) throw err })
-  dbo.createCollection("users_messages", function(err, res) { if (err) throw err })
+  dbo.createCollection(collBlack, function(err, res) { if (err) throw err })
+  dbo.createCollection(collMsg, function(err, res) { if (err) throw err })
   // db.close()
 })  
 
-bot.command("showC", (ctx) => {     // show collections
+bot.command('showC', ctx => {     // show collections
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
     dbo.listCollections().toArray(function(err, collInfos) {
       for (i = 0; i < collInfos.length; i++) {
-        ctx.reply(collInfos[i].name),
+        //ctx.reply(collInfos[i].name),         // появился баг с 2х пустыми скобками
         (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { 
           ctx.reply(items) 
         })
@@ -120,25 +128,42 @@ bot.command("showC", (ctx) => {     // show collections
   })
 })
 
-bot.action(/ban (\d+)/gi, (ctx) => {  
+bot.action(/ban (\d+)/, ctx => {  
   const cur_chat_id = ctx.match[1]
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
     var myobj = {chat_id: cur_chat_id}
-    dbo.collection("black_list").insertOne(myobj, function(err, res) { if (err) throw err 
-      ctx.reply(cur_chat_id + " inserted to black list")
+    dbo.collection(collBlack).insertOne(myobj, function(err, res) { if (err) throw err 
+      ctx.reply(cur_chat_id + ' added to black list')
     })
   })
 })
 
-async function not_in_ban(check_id) {           // проверка есть ли уже айди в коллекции
+bot.action(/remove (\d+)/, ctx => {  
+  const cur_chat_id = ctx.match[1]
+  MongoClient.connect(url, function(err, db) { if (err) throw err
+    var dbo = db.db(bot_db)
+    var myobj = {chat_id: cur_chat_id}
+    dbo.collection(collBlack).deleteOne(myobj, function(err, res) { if (err) throw err 
+      ctx.reply(cur_chat_id + ' deleted from black list')
+    })
+  })
+})
+
+bot.action(/clearHistory (\d+)/, ctx => {
+  const cur_chat_id = ctx.match[1]
+  ctx.reply('Ничего не произошло для ' + cur_chat_id)      //пока что бесполезное
+})
+
+async function notBanned(check_id) {           // проверка есть ли уже айди в коллекции
+
   const client = await MongoClient.connect(url, { useNewUrlParser: true })
       .catch(err => { console.log(err) })
-  if (!client) {
-    return
-  }
+
+  if (!client) { return }
+
   const dbo = client.db(bot_db)
-  let blc = dbo.collection("black_list")
+  let blc = dbo.collection(collBlack)
   var items = await blc.find({chat_id: check_id.toString()}).toArray()
 
   if (items.length){          // что это значит???
@@ -149,11 +174,11 @@ async function not_in_ban(check_id) {           // проверка есть л�
   // return items[0].id
 }
 
-function save_usr_msg_id(ctx) {   // saving msg_id of the each user
+function saveUserMsgId(ctx) {   // saving msg_id of the each user
   MongoClient.connect(url, function(err, db) { if (err) throw err
     var dbo = db.db(bot_db)
     var myobj = {id: ctx.chat.id, msg_id: ctx.message.message_id}
-    dbo.collection("users_messages").insertOne(myobj, function(err, res) { if (err) throw err })
+    dbo.collection(collMsg).insertOne(myobj, function(err, res) { if (err) throw err })
   })
 }
 //    ========== DB ============
@@ -161,38 +186,52 @@ function save_usr_msg_id(ctx) {   // saving msg_id of the each user
 
 //       ========= REACTIONS =========
 bot.action('A', ctx => {
-  ctx.reply('Введите данные для авторизации в таком формате:\n\nE-Mail\nПароль\n\nОтправленные вами данные будут скрыты'),
-  telegram.sendMessage(data.admins[0], `${ctx.chat.id} clicked AUTH`)
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      telegram.sendMessage(ctx.chat.id, 'Введите данные для авторизации в таком формате:\n\nE-Mail\nПароль\n\nОтправленные вами данные будут скрыты'),
+      telegram.sendMessage(data.admins[0], `${ctx.chat.id} clicked AUTH`)
+    }
+  })()
 })
 
 bot.action('B', ctx => {
-  ctx.reply('Эта функция недоступна в данный момент ☹︎')
-})
-
-bot.action('del', ctx => {
-  ctx.reply('Ничего не произошло')      //пока что бесполезное
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      telegram.sendMessage(ctx.chat.id, 'Эта функция недоступна в данный момент ☹︎')
+    }
+  })()
 })
 
 bot.action('mainMenu', ctx => {
-  ctx.reply(
-    `Привет ${ctx.chat.first_name}, это главное меню`,
-    Extra.markup(keysMain)
-  )
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      telegram.sendMessage(ctx.chat.id, `Привет ${ctx.chat.first_name}, это главное меню`,
+        Extra.markup(keysMain)
+      )
+    }
+  })()
 })
 
 bot.on('text', ctx => {
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      saveUserMsgId(ctx)
+      const usrText = ctx.message.text
 
-  save_usr_msg_id(ctx)
-
-  const usrText = ctx.message.text
-  ctx.telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
-  ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
-  telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
+      telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
+      telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
+      telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
+    }
+  })()
 })
 
 bot.on('message', ctx => {
-  //save_usr_msg_id(ctx)
-  telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
+  (async () => {
+    if (await notBanned(ctx.chat.id)){
+      //saveUserMsgId(ctx)
+      telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
+    }
+  })()
 })
 //       ========= REACTIONS =========
 
