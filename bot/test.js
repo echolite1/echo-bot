@@ -24,7 +24,7 @@ const commandParts = require('./telegrafCommandParts') // for args parsing
 bot.use(commandParts()) // for args parsing
 
 
-// functions:           saveUserMsgId(ctx), keysAdmin(id), notBanned
+// functions:           saveUserMsgId(ctx), keysAdmin(id), notBanned(check_id)
 
 //       commands:      start, help
 // admin commands:      send(id*text), showC
