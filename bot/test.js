@@ -43,6 +43,13 @@ function keysAdmin(id) {
   ])
 }
 
+function keysCustom(btnText1, btnText2, cmd1, cmd2) {
+  return Markup.inlineKeyboard([
+    [Markup.callbackButton(btnText1, cmd1)], 
+    [Markup.callbackButton(btnText2, cmd2)]
+  ])
+}
+
 keysBack = Markup.inlineKeyboard([
   [Markup.callbackButton('Главное меню', 'mainMenu'), Markup.callbackButton('Авторизация', 'A')]
 ])
@@ -60,19 +67,17 @@ bot.start(ctx => {
   (async () => {
     if (await notBanned(ctx.chat.id)){
 
-      saveUserMsgId(ctx)
-
       telegram.sendMessage(
         ctx.chat.id, `Привет ${ctx.chat.first_name}, это главное меню`,
         Extra.markup(keysMain)
-      )
+      )           //  to USER
 
       telegram.sendMessage(
         data.admins[0], `ID: ${ctx.chat.id}\nusr: ${ctx.chat.username}`,
         Extra.markup(keysAdmin(ctx.chat.id))
-      )
+      )           //  to ADMIN
 
-      telegram.sendMessage(data.admins[0], `/send ${ctx.chat.id}*the_text`)
+      telegram.sendMessage(data.admins[0], `/send ${ctx.chat.id}*the_text`)   //  to ADMIN
 
       telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
     }
@@ -92,11 +97,17 @@ bot.help(ctx => {
 })
 
 bot.command('send', ctx => 
-  ctx.telegram.sendMessage(        // сделать сложный парсер
+  ctx.telegram.sendMessage(
     ctx.state.command.args.split('*')[0], 
-    ctx.state.command.args.split('*')[1]
+    ctx.state.command.args.split('*')[1],
+    Extra.markup(keysCustom(
+      ctx.state.command.args.split('*')[2],
+      ctx.state.command.args.split('*')[3],
+      ctx.state.command.args.split('*')[4],
+      ctx.state.command.args.split('*')[5]
+    ))
   )
-) // (id_to, text)
+) // (id_to, text, btntxt1, btntxt2, cmd1, cmd2)
 //       ========= COMMANDS =========
 
 
@@ -156,22 +167,17 @@ bot.action(/clearHistory (\d+)/, ctx => {
 })
 
 async function notBanned(check_id) {           // проверка есть ли уже айди в коллекции
-
   const client = await MongoClient.connect(url, { useNewUrlParser: true })
       .catch(err => { console.log(err) })
-
   if (!client) { return }
-
   const dbo = client.db(bot_db)
   let blc = dbo.collection(collBlack)
   var items = await blc.find({chat_id: check_id.toString()}).toArray()
-
-  if (items.length){          // что это значит???
+  if (items.length){
     return false
   } else {
     return true
-  }
-  // return items[0].id
+  }// return items[0].id
 }
 
 function saveUserMsgId(ctx) {   // saving msg_id of the each user
@@ -244,32 +250,10 @@ bot.startPolling()
 
 //      === МУСОРКА ===
 
-// bot.command('a', (ctx) => ctx.reply('Command a'))
-// bot.command('b', ({ reply }) => reply('Command b'))
-// bot.command('c', Telegraf.reply('Command c'))
 // telegram.editMessageText(data.admins[0], 205, 205, 'Содержимое скрыто.')
-// telegram.forwardMessage(438473347, 163700134, ctx.state.command.args) //(to, from, msg_id)
-// telegram.deleteMessage(163700134, ctx.state.command.args) //(delete from which chat, msg_id)
 // bot.on(['forward', 'sticker'], (ctx) => console.log('YYY', ctx.fetch.id)) // a OR b
-// ===================
-// bot.command('hide', (ctx) => {                // переделать в реакцию
-//   const userAction = async () => {
-//     const response = await fetch(`${tokenLink}forwardMessage?chat_id=${data.admins[0]}&from_chat_id=${id}&message_id=`+ctx.state.command.args);
-//     const myJson = await response.json(); //extract JSON from the http response
-//     console.log(myJson)
-//     var jsonData = JSON.stringify(myJson);
-//     var fs = require('fs')
-//     fs.writeFile("test.txt", jsonData, function(err) {
-//       if (err) {console.log(err)}
-//     })
-//     telegram.deleteMessage(id, ctx.state.command.args) //(delete from which chat, msg_id)
-//     telegram.sendMessage(id, 'Отправленное вами сообщение было скрыто')
-//   }
-//   userAction()
-// })
-// ===================
-// market://details?id=com.google.android.apps.maps
 
+// market://details?id=com.google.android.apps.maps
 
 // db commands:   connect                   - MongoClient.connect(url, function(err, db) {...} 
 //                choose db                 - dbo = db.db("db_name")
