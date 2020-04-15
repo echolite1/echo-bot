@@ -100,6 +100,9 @@ bot.command('send', ctx =>
   ctx.telegram.sendMessage(
     ctx.state.command.args.split('*')[0], 
     ctx.state.command.args.split('*')[1],
+    // if(ctx.state.command.args.split('*')[2] == undefined){
+    //   return console.log('vse ok')
+    // }
     Extra.markup(keysCustom(
       ctx.state.command.args.split('*')[2],
       ctx.state.command.args.split('*')[3],
@@ -114,7 +117,7 @@ bot.command('send', ctx =>
 //    ========== DB ============
 var MongoClient = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017'
-const bot_db = 'bot_db_2'
+const bot_db = 'DB1'
 const collMsg = 'userMessages'
 const collBlack = 'blacklist'
 
@@ -130,7 +133,7 @@ bot.command('showC', ctx => {     // show collections
     var dbo = db.db(bot_db)
     dbo.listCollections().toArray(function(err, collInfos) {
       for (i = 0; i < collInfos.length; i++) {
-        //ctx.reply(collInfos[i].name),         // появился баг с 2х пустыми скобками
+        ctx.reply(collInfos[i].name),         // появился баг с 2х пустыми скобками
         (dbo.collection(collInfos[i].name)).find().toArray(function(err, items) { 
           ctx.reply(items) 
         })
@@ -221,9 +224,7 @@ bot.action('mainMenu', ctx => {
 bot.on('text', ctx => {
   (async () => {
     if (await notBanned(ctx.chat.id)){
-      saveUserMsgId(ctx)
       const usrText = ctx.message.text
-
       telegram.sendMessage(data.admins[0], `ID: ${ctx.chat.id}\n\n` + usrText)
       telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)
       telegram.sendMessage(ctx.chat.id, 'Отправленные вами данные были скрыты в целях безопасности')
@@ -234,7 +235,6 @@ bot.on('text', ctx => {
 bot.on('message', ctx => {
   (async () => {
     if (await notBanned(ctx.chat.id)){
-      //saveUserMsgId(ctx)
       telegram.deleteMessage(ctx.chat.id, ctx.message.message_id)       // удаляем ненужный текст юзера
     }
   })()
